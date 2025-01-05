@@ -1,7 +1,12 @@
-import './App.css'
-import {useEffect, useState} from "react"
-import {collection, getDocs} from "firebase/firestore"
-import {db} from "./firebaseConfig"
+import './App.css';
+import {useEffect, useState} from "react";
+import {collection, getDocs} from "firebase/firestore";
+import {db} from "./firebaseConfig";
+import {Bar} from 'react-chartjs-2';
+import {Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend} from 'chart.js';
+
+// Rejestracja komponentów Chart.js
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const COLUMNS = [
     {key: "dateTime", label: "Data i godzina"},
@@ -14,6 +19,7 @@ const COLUMNS = [
 
 function App() {
     const [data, setData] = useState([]);
+    const [priorityCounts, setPriorityCounts] = useState({});
     const [hiddenColumns, setHiddenColumns] = useState({
         dateTime: false,
         pid: false,
@@ -32,7 +38,7 @@ function App() {
 
     const getRowClass = (priority) => {
         switch (priority) {
-            case "F": //Fatal
+            case "F": // Fatal
                 return "row-fatal";
             case "E": // Error
                 return "table-danger"; // Czerwony wiersz
@@ -41,9 +47,9 @@ function App() {
             case "I": // Info
                 return "table-info"; // Niebieski wiersz
             case "D": // Debug
-                return "table-success"; // Szary wiersz
+                return "table-success"; // Zielony wiersz
             case "V": // Verbose
-                return "row-verbose"; // Zielony wiersz
+                return "row-verbose"; // Szary wiersz
             default:
                 return ""; // Domyślny kolor
         }
@@ -58,7 +64,15 @@ function App() {
                     ...doc.data(),
                 }));
                 const sortedItems = items.sort((a, b) => a.ordinalNumber - b.ordinalNumber);
+
+                // Zliczanie logów według poziomu priorytetu
+                const counts = sortedItems.reduce((acc, item) => {
+                    acc[item.priority] = (acc[item.priority] || 0) + 1;
+                    return acc;
+                }, {});
+
                 setData(sortedItems);
+                setPriorityCounts(counts);
             } catch (error) {
                 console.error("Error fetching data:", error);
             }
@@ -67,13 +81,72 @@ function App() {
         fetchData().then(r => console.log(r));
     }, []);
 
+    // Dane do wykresu
+    const chartData = {
+        labels: ["Fatal", "Error", "Warning", "Info", "Debug", "Verbose"],
+        datasets: [
+            {
+                label: 'Liczba logów',
+                data: ["F", "E", "W", "I", "D", "V"].map((key) => priorityCounts[key] || 0),
+                backgroundColor: [
+                    'rgba(220,53,206,0.81)', // Fatal
+                    'rgba(255,99,71,0.83)', // Error
+                    'rgba(255,193,7,0.82)', // Warning
+                    'rgba(23,162,184,0.8)', // Info
+                    'rgba(40,167,69,0.81)', // Debug
+                    'rgba(108,117,125,0.8)'  // Verbose
+                ],
+                borderColor: [
+                    'rgb(99,24,93)', // Fatal
+                    'rgb(119,47,34)', // Error
+                    'rgb(151,114,4)', // Warning
+                    'rgb(13,95,108)', // Info
+                    'rgb(23,94,39)', // Debug
+                    'rgb(60,65,69)'  // Verbose
+                ],
+                borderWidth: 1,
+            }
+        ],
+    };
+
+    const chartOptions = {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false, // Ukryj legendę
+            },
+            title: {
+                display: true, // Wyświetl tytuł
+                text: 'Liczba logów według poziomu priorytetu', // Treść tytułu
+                font: {
+                    size: 18, // Rozmiar czcionki
+                }
+            }
+        }
+    };
+
     return (
-        <div className="container-fluid ">
-            <div className="mb-3">
+        <div className="container-fluid d-flex flex-column justify-content-center align-items-center bg-lc-dark"
+             style={{minHeight: "100vh"}}>
+
+            <div style={{
+                width: "80%",
+                height: "50vh",
+                marginTop: "20px",
+                marginBottom: "20px",
+                margin: "0 auto",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center"
+            }}>
+                <Bar data={chartData} options={chartOptions}/>
+            </div>
+
+            <div className="mb-3 text-center">
                 {COLUMNS.map(({key, label}) => (
                     <button
                         key={key}
-                        className="btn btn-lc me-2 button-lc"
+                        className={hiddenColumns[key] ? "btn m-2 btn-outline-secondary" : "btn m-2 btn-secondary"}
                         onClick={() => toggleColumn(key)}
                     >
                         {hiddenColumns[key] ? `Pokaż ${label}` : `Ukryj ${label}`}
@@ -82,7 +155,7 @@ function App() {
             </div>
 
             <div className="container-fluid d-flex justify-content-center align-items-center"
-                 style={{minHeight: "100vh"}}>
+                 style={{minHeight: "100vh", width: "80%"}}>
                 <table className="table table-striped table-bordered table-hover w-100">
                     <thead className="thead-dark">
                     <tr>
@@ -111,9 +184,9 @@ function App() {
                     </tbody>
                 </table>
             </div>
+
         </div>
-    )
-        ;
+    );
 }
 
 export default App;
