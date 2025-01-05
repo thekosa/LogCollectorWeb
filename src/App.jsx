@@ -120,9 +120,30 @@ function App() {
                 text: 'Liczba logów według poziomu priorytetu', // Treść tytułu
                 font: {
                     size: 18, // Rozmiar czcionki
-                }
+                    family: 'Arial, sans-serif', // Czcionka
+                    weight: 'bold' // Waga czcionki
+                },
+                color: '#fff', // Kolor tekstu tytułu
             }
-        }
+        },
+        scales: {
+            x: {
+                ticks: {
+                    color: '#ddd', // Kolor tekstu osi X
+                },
+                grid: {
+                    color: '#444', // Kolor grida osi X
+                },
+            },
+            y: {
+                ticks: {
+                    color: '#ddd', // Kolor tekstu osi Y
+                },
+                grid: {
+                    color: '#444', // Kolor grida osi Y
+                },
+            }
+        },
     };
 
     return (
@@ -132,7 +153,7 @@ function App() {
             <div style={{
                 width: "80%",
                 height: "50vh",
-                marginTop: "20px",
+                marginTop: "30px",
                 marginBottom: "20px",
                 margin: "0 auto",
                 display: "flex",
@@ -142,7 +163,7 @@ function App() {
                 <Bar data={chartData} options={chartOptions}/>
             </div>
 
-            <div className="mb-3 text-center">
+            <div className="mb-3 text-center" style={{margin: 20}}>
                 {COLUMNS.map(({key, label}) => (
                     <button
                         key={key}
