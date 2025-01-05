@@ -18,7 +18,9 @@ const COLUMNS = [
 ];
 
 function App() {
+    const [actualDevice, setActualDevice] = useState("Google sdk_gphone64_x86_64");
     const [data, setData] = useState([]);
+    const [devices, setDevices] = useState([]);
     const [priorityCounts, setPriorityCounts] = useState({});
     const [hiddenColumns, setHiddenColumns] = useState({
         dateTime: false,
@@ -58,7 +60,7 @@ function App() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const querySnapshot = await getDocs(collection(db, "samsung SM-G781B"));
+                const querySnapshot = await getDocs(collection(db, actualDevice));
                 const items = querySnapshot.docs.map((doc) => ({
                     id: doc.id,
                     ...doc.data(),
@@ -77,8 +79,21 @@ function App() {
                 console.error("Error fetching data:", error);
             }
         };
-
         fetchData().then(r => console.log(r));
+    }, [actualDevice]);
+
+
+    useEffect(() => {
+        const fetchDeviceNames = async () => {
+            try {
+                const querySnapshot = await getDocs(collection(db, "devices-registry"));
+                const devicesNames = querySnapshot.docs.map((doc) => doc.data().name); // Zbieranie nazw urządzeń (pola 'name')
+                setDevices(devicesNames)
+            } catch (error) {
+                console.error("Error fetching device names:", error);
+            }
+        };
+        fetchDeviceNames().then(r => console.log(r));
     }, []);
 
     // Dane do wykresu
@@ -150,6 +165,25 @@ function App() {
         <div className="container-fluid d-flex flex-column justify-content-center align-items-center bg-lc-dark"
              style={{minHeight: "100vh"}}>
 
+            <div className="text-center my-3 align-">
+                <div style={{position: "absolute", top: "10px", left: "10px", zIndex: 1000}}>
+                    <select
+                        className="form-select"
+                        onChange={(e) => setActualDevice(e.target.value)}
+                        value={actualDevice}
+                    >
+                        <option value="" disabled>Wybierz urządzenie</option>
+                        {devices.map((device, index) => (
+                            <option key={index} value={device}>
+                                {device} {/* Pole 'name' lub 'id', w zależności od struktury zbioru Firestore */}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+            <div className="text-light">Wybrane urządzenie: {actualDevice}</div>
+
             <div style={{
                 width: "80%",
                 height: "50vh",
@@ -190,7 +224,7 @@ function App() {
                     </tr>
                     </thead>
                     <tbody>
-                    {data.map((item) => (
+                    {data.slice(0, 2000).map((item) => (
                         <tr key={item.id} className={getRowClass(item.priority)}>
                             <td className="d-none">{item.ordinalNumber}</td>
                             {!hiddenColumns.dateTime &&
@@ -205,7 +239,6 @@ function App() {
                     </tbody>
                 </table>
             </div>
-
         </div>
     );
 }
