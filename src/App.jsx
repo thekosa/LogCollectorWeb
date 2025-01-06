@@ -1,9 +1,9 @@
 import './App.css';
 import {useEffect, useState} from "react";
-import {collection, getDocs} from "firebase/firestore";
+import {collection, deleteDoc, doc, getDocs} from "firebase/firestore";
 import {db} from "./firebaseConfig";
 import {Bar} from 'react-chartjs-2';
-import {Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend} from 'chart.js';
+import {BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, Title, Tooltip} from 'chart.js';
 
 // Rejestracja komponentów Chart.js
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
@@ -18,7 +18,8 @@ const COLUMNS = [
 ];
 
 function App() {
-    const [actualDevice, setActualDevice] = useState("Google sdk_gphone64_x86_64");
+    const [toggleSettings, setToggleSettings] = useState(false);
+    const [actualDevice, setActualDevice] = useState("");
     const [data, setData] = useState([]);
     const [devices, setDevices] = useState([]);
     const [priorityCounts, setPriorityCounts] = useState({});
@@ -161,6 +162,25 @@ function App() {
         },
     };
 
+    async function deleteDevice(actualDevice) {
+        try {
+            const devicesCollection = collection(db, "devices-registry");
+            const querySnapshot = await getDocs(devicesCollection);
+            const deviceToDelete = querySnapshot.docs.find((doc) => doc.data().name === actualDevice);
+
+            if (deviceToDelete) {
+                await deleteDoc(doc(db, "devices-registry", deviceToDelete.id));
+                console.log(`Urządzenie ${actualDevice} zostało usunięte.`);
+                setActualDevice(''); // Resetuje aktualnie wybrane urządzenie
+                setDevices((prevDevices) => prevDevices.filter((device) => device !== actualDevice)); // Aktualizuje listę urządzeń
+            } else {
+                console.warn(`Nie znaleziono urządzenia o nazwie ${actualDevice}.`);
+            }
+        } catch (error) {
+            console.error("Wystąpił błąd przy usuwaniu urządzenia:", error);
+        }
+    }
+
     return (
         <div className="container-fluid d-flex flex-column justify-content-center align-items-center bg-lc-dark"
              style={{minHeight: "100vh"}}>
@@ -175,10 +195,35 @@ function App() {
                         <option value="" disabled>Wybierz urządzenie</option>
                         {devices.map((device, index) => (
                             <option key={index} value={device}>
-                                {device} {/* Pole 'name' lub 'id', w zależności od struktury zbioru Firestore */}
+                                {device}
                             </option>
                         ))}
                     </select>
+                </div>
+            </div>
+
+            <div style={{position: "absolute", top: "10px", right: "10px", zIndex: 1000}}>
+                <div style={{display: "flex", flexDirection: "column", alignItems: "flex-end"}}>
+                    <button
+                        className="btn btn-secondary"
+                        type="button"
+                        id="optionsMenuButton"
+                        onClick={() => setToggleSettings(!toggleSettings)}
+                    >
+                        <img src="src/assets/gear.svg" width="30" height="30" className="white-svg"/>
+                    </button>
+                    <button
+                        style={{
+                            opacity: toggleSettings ? 1 : 0,
+                            transform: toggleSettings ? "translateY(0)" : "translateY(-10px)",
+                            transition: "opacity 0.3s ease, transform 0.3s ease", // Animacja przejścia
+                            marginTop: "10px"
+                        }}
+                        className="btn btn-danger"
+                        onClick={() => deleteDevice(actualDevice)}
+                    >
+                        Usuń to urządzenie
+                    </button>
                 </div>
             </div>
 
