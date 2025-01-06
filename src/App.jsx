@@ -210,7 +210,7 @@ function App() {
                         id="optionsMenuButton"
                         onClick={() => setToggleSettings(!toggleSettings)}
                     >
-                        <img src="src/assets/gear.svg" width="30" height="30" className="white-svg"/>
+                        <img src="src/assets/gear.svg" width="30" height="30" alt="options" className="white-svg"/>
                     </button>
                     <button
                         style={{
