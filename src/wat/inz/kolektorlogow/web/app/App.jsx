@@ -1,4 +1,4 @@
-import '../libcss/App.css';
+import '.././styles/App.css';
 import {useEffect, useState} from "react";
 import {collection, deleteDoc, doc, getDocs} from "firebase/firestore";
 import {db} from "../db/firebaseConfig.js";
