@@ -1,7 +1,7 @@
-import './App.css';
+import '../libcss/App.css';
 import {useEffect, useState} from "react";
 import {collection, deleteDoc, doc, getDocs} from "firebase/firestore";
-import {db} from "./firebaseConfig";
+import {db} from "../db/firebaseConfig.js";
 import {Bar} from 'react-chartjs-2';
 import {BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, Title, Tooltip} from 'chart.js';
 
@@ -67,7 +67,7 @@ function App() {
                     ...doc.data(),
                 }));
                 const sortedItems = items.sort((a, b) => a.ordinalNumber - b.ordinalNumber);
-
+    
                 // Zliczanie logów według poziomu priorytetu
                 const counts = sortedItems.reduce((acc, item) => {
                     acc[item.priority] = (acc[item.priority] || 0) + 1;
