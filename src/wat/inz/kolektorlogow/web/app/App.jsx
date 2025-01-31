@@ -67,7 +67,7 @@ function App() {
                     ...doc.data(),
                 }));
                 const sortedItems = items.sort((a, b) => a.ordinalNumber - b.ordinalNumber);
-    
+
                 // Zliczanie logów według poziomu priorytetu
                 const counts = sortedItems.reduce((acc, item) => {
                     acc[item.priority] = (acc[item.priority] || 0) + 1;
@@ -98,7 +98,7 @@ function App() {
     }, []);
 
     // Dane do wykresu
-    const chartData = {
+    const priorityChartData = {
         labels: ["Fatal", "Error", "Warning", "Info", "Debug", "Verbose"],
         datasets: [
             {
@@ -125,7 +125,7 @@ function App() {
         ],
     };
 
-    const chartOptions = {
+    const chartOptions = (title) => ({
         responsive: true,
         plugins: {
             legend: {
@@ -133,7 +133,7 @@ function App() {
             },
             title: {
                 display: true, // Wyświetl tytuł
-                text: 'Liczba logów według poziomu priorytetu', // Treść tytułu
+                text: title, // Treść tytułu
                 font: {
                     size: 18, // Rozmiar czcionki
                     family: 'Arial, sans-serif', // Czcionka
@@ -160,7 +160,28 @@ function App() {
                 },
             }
         },
+    });
+
+    const tagCounts = data.reduce((acc, item) => {
+        acc[item.tag] = (acc[item.tag] || 0) + 1;
+        return acc;
+    }, {});
+
+    const sortedTags = Object.entries(tagCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10); // TOP 10
+
+    const top10ChartData = {
+        labels: sortedTags.map(([tag]) => tag),
+        datasets: [
+            {
+                label: "Ilość wystąpień",
+                data: sortedTags.map(([, count]) => count),
+                backgroundColor: "#007bff",
+            },
+        ],
     };
+
 
     async function deleteDevice(actualDevice) {
         try {
@@ -182,8 +203,31 @@ function App() {
     }
 
     return (
+
         <div className="container-fluid d-flex flex-column justify-content-center align-items-center bg-lc-dark"
              style={{minHeight: "100vh"}}>
+
+            {(data.length === 0 || actualDevice === "") && (
+                <div style={{
+                    position: "fixed",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "100%",
+                    backgroundColor: "rgb(43,45,48)",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    color: "white",
+                    fontSize: "24px",
+                    fontWeight: "bold",
+                    zIndex: 999,
+                }}>
+                    {actualDevice === ""
+                        ? (<div style={{fontSize: "50px"}}>Wybierz urządzenie</div>)
+                        : (<div style={{fontSize: "50px"}}>Brak logów</div>)}
+                </div>
+            )}
 
             <div className="text-center my-3 align-">
                 <div style={{position: "absolute", top: "10px", left: "10px", zIndex: 1000}}>
@@ -231,7 +275,7 @@ function App() {
 
             <div style={{
                 width: "80%",
-                height: "50vh",
+                height: "40vh",
                 marginTop: "30px",
                 marginBottom: "20px",
                 margin: "0 auto",
@@ -239,7 +283,14 @@ function App() {
                 justifyContent: "center",
                 alignItems: "center"
             }}>
-                <Bar data={chartData} options={chartOptions}/>
+                {data.length > 50000 ? (
+                    <Bar data={top10ChartData} options={chartOptions("10 najczęściej występujących tagów")}/>
+                ) : (
+                    <div/>
+                )}
+                <Bar data={priorityChartData} options={chartOptions("Liczba logów według poziomu priorytetu")}/>
+
+
             </div>
 
             <div className="mb-3 text-center" style={{margin: 20}}>
@@ -256,33 +307,35 @@ function App() {
 
             <div className="container-fluid d-flex justify-content-center align-items-center"
                  style={{minHeight: "100vh", width: "80%"}}>
-                <table className="table table-striped table-bordered table-hover w-100">
-                    <thead className="thead-dark">
-                    <tr>
-                        <th className="d-none">Liczba porządkowa</th>
-                        {!hiddenColumns.dateTime && <th>Data i godzina</th>}
-                        {!hiddenColumns.pid && <th>PID</th>}
-                        {!hiddenColumns.tid && <th>TID</th>}
-                        {!hiddenColumns.priority && <th>Priority</th>}
-                        {!hiddenColumns.tag && <th>Tag</th>}
-                        {!hiddenColumns.message && <th>Message</th>}
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {data.slice(0, 2000).map((item) => (
-                        <tr key={item.id} className={getRowClass(item.priority)}>
-                            <td className="d-none">{item.ordinalNumber}</td>
-                            {!hiddenColumns.dateTime &&
-                                <td>{new Date(item.dateTime.seconds * 1000).toLocaleString()}</td>}
-                            {!hiddenColumns.pid && <td>{item.pid}</td>}
-                            {!hiddenColumns.tid && <td>{item.tid}</td>}
-                            {!hiddenColumns.priority && <td>{item.priority}</td>}
-                            {!hiddenColumns.tag && <td>{item.tag}</td>}
-                            {!hiddenColumns.message && <td className="text-start">{item.message}</td>}
+                <div className="table-container">
+                    <table className="table table-striped table-bordered table-hover w-100">
+                        <thead className="thead-dark">
+                        <tr>
+                            <th className="d-none">Liczba porządkowa</th>
+                            {!hiddenColumns.dateTime && <th>Data i godzina</th>}
+                            {!hiddenColumns.pid && <th>PID</th>}
+                            {!hiddenColumns.tid && <th>TID</th>}
+                            {!hiddenColumns.priority && <th>Priority</th>}
+                            {!hiddenColumns.tag && <th>Tag</th>}
+                            {!hiddenColumns.message && <th>Message</th>}
                         </tr>
-                    ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                        {data.slice(-2000).map((item) => (
+                            <tr key={item.id} className={getRowClass(item.priority)}>
+                                <td className="d-none">{item.ordinalNumber}</td>
+                                {!hiddenColumns.dateTime &&
+                                    <td>{new Date(item.dateTime.seconds * 1000).toLocaleString()}</td>}
+                                {!hiddenColumns.pid && <td>{item.pid}</td>}
+                                {!hiddenColumns.tid && <td>{item.tid}</td>}
+                                {!hiddenColumns.priority && <td>{item.priority}</td>}
+                                {!hiddenColumns.tag && <td>{item.tag}</td>}
+                                {!hiddenColumns.message && <td className="text-start">{item.message}</td>}
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );
