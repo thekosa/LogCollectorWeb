@@ -283,7 +283,7 @@ function App() {
                 justifyContent: "center",
                 alignItems: "center"
             }}>
-                {data.length > 50000 ? (
+                {data.length > 30000 ? (
                     <Bar data={top10ChartData} options={chartOptions("10 najczęściej występujących tagów")}/>
                 ) : (
                     <div/>
